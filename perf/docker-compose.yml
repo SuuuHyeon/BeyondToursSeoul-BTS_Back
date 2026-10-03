@@ -1,0 +1,20 @@
+services:
+  db:
+    build: ./db
+    container_name: bts-perf-db
+    environment:
+      POSTGRES_DB: bts
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements,auto_explain", "-c", "auto_explain.log_min_duration=20", "-c", "auto_explain.log_analyze=on"]
+    ports:
+      - "5433:5432"
+    cpus: 1.0
+    mem_limit: 1g
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - ./dump:/dump
+
+volumes:
+  db-data:
