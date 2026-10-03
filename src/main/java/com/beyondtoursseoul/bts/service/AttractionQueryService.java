@@ -60,7 +60,7 @@ public class AttractionQueryService {
 
 
     // 캐시 키에 #category 추가
-    @Cacheable(value = "attractionsPage", key = "{#category, #date, #timeSlot, #minScore, #maxScore, #lang, #pageable.pageNumber}")
+    @Cacheable(value = "attractionsPage", key = "{#category, #date, #timeSlot, #minScore, #maxScore, #lang, #pageable.pageNumber}", sync = true)
     public Page<AttractionSummaryResponse> getListPage(String category, LocalDate date, String timeSlot,
                                                        BigDecimal minScore, BigDecimal maxScore,
                                                        String lang, Pageable pageable) {
@@ -120,7 +120,7 @@ public class AttractionQueryService {
     }
 
     // 특별히 key를 적지 않으면 메서드 파라미터 전체를 조합해 자동으로 고유 키를 생성해줌
-    @Cacheable(value = "attractions")
+    @Cacheable(value = "attractions", sync = true)
     public List<AttractionSummaryResponse> getList(String category, LocalDate date, String timeSlot,
                                                    BigDecimal minScore, BigDecimal maxScore,
                                                    String lang) {
