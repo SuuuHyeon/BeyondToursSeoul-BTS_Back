@@ -43,6 +43,21 @@ public class AttractionQueryService {
     @Autowired
     private AttractionQueryService self;
 
+    private List<String> resolveCategoryCodes(String keyword) {
+        String lower = keyword.toLowerCase();
+        return self.getCategoryMap().values().stream()
+                .filter(c -> contains(c.getName(), keyword)
+                        || (c.getNameEn() != null && c.getNameEn().toLowerCase().contains(lower))
+                        || contains(c.getNameZh(), keyword)
+                        || contains(c.getNameJa(), keyword))
+                .map(TourCategory::getCode)
+                .toList();
+    }
+
+    private static boolean contains(String value, String keyword) {
+        return value != null && value.contains(keyword);
+    }
+
 
     // 캐시 키에 #category 추가
     @Cacheable(value = "attractionsPage", key = "{#category, #date, #timeSlot, #minScore, #maxScore, #lang, #pageable.pageNumber}")
@@ -53,13 +68,18 @@ public class AttractionQueryService {
         LocalDate effectiveDate = date != null ? date
                 : scoreRepository.findLatestDate().orElse(LocalDate.now().minusDays(1));
 
-        // Null 파라미터로 인한 Postgres bytea 에러를 방지하기 위해 boolean 플래그와 검색 키워드를 Java에서 생성
-        boolean hasCategory = category != null && !category.isBlank();
-        String categoryKeyword = hasCategory ? "%" + category + "%" : "";
-
-        // 1. DB에서 조건에 맞는 딱 10개의 관광지 데이터와 점수를 조인해서 가져옵니다 (초고속 페이징)
-        Page<Object[]> pageResult = attractionRepository.findWithLocalScoresPage(
-                effectiveDate, timeSlot, minScore, maxScore, hasCategory, categoryKeyword, pageable);
+        Page<Object[]> pageResult;
+        if (category == null || category.isBlank()) {
+            pageResult = attractionRepository.findForPage(
+                    effectiveDate, timeSlot, minScore, maxScore, pageable);
+        } else {
+            List<String> codes = resolveCategoryCodes(category);
+            if (codes.isEmpty()) {
+                return Page.empty(pageable);   // 맞는 카테고리가 없으면 DB에 갈 필요 없음
+            }
+            pageResult = attractionRepository.findForPageByCategoryCodes(
+                    effectiveDate, timeSlot, minScore, maxScore, codes, pageable);
+        }
 
         // 2. 결과가 없으면 빈 페이지 반환
         if (pageResult.isEmpty()) {
@@ -104,14 +124,22 @@ public class AttractionQueryService {
     public List<AttractionSummaryResponse> getList(String category, LocalDate date, String timeSlot,
                                                    BigDecimal minScore, BigDecimal maxScore,
                                                    String lang) {
+
         LocalDate effectiveDate = date != null ? date
                 : scoreRepository.findLatestDate().orElse(LocalDate.now().minusDays(1));
 
-        boolean hasCategory = category != null && !category.isBlank();
-        String categoryKeyword = hasCategory ? "%" + category + "%" : "";
-
-        List<Object[]> rows = attractionRepository.findWithLocalScoresForList(
-                effectiveDate, timeSlot, minScore, maxScore, hasCategory, categoryKeyword);
+        List<Object[]> rows;
+        if (category == null || category.isBlank()) {
+            rows = attractionRepository.findForMap(
+                    effectiveDate, timeSlot, minScore, maxScore);
+        } else {
+            List<String> codes = resolveCategoryCodes(category);
+            if (codes.isEmpty()) {
+                return List.of();
+            }
+            rows = attractionRepository.findForMapByCategoryCodes(
+                    effectiveDate, timeSlot, minScore, maxScore, codes);
+        }
 
         Map<String, TourCategory> categories = self.getCategoryMap();
 

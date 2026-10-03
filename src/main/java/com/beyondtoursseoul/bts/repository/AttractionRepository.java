@@ -16,63 +16,72 @@ public interface AttractionRepository extends JpaRepository<Attraction, Long> {
 
     List<Attraction> findByDetailFetchedFalseAndExternalIdNotNull();
 
-    /**
-     * 목록용: 해당 일자·시간대에 점수가 있고, 점수 구간을 만족하는 관광지만 조인으로 조회한다.
-     * (전체 attraction findAll 후 메모리 필터링 대신 DB에서 걸러 이그레스·메모리를 줄인다.)
-     */
+    // [탐색 화면 · 페이지] 카테고리 없음
     @Query("""
-            select a, s from Attraction a
-            join AttractionLocalScore s on s.id.attractionId = a.id
-            where s.id.date = :date
-              and s.id.timeSlot = :timeSlot
-              and (:minScore is null or s.score >= :minScore)
-              and (:maxScore is null or s.score <= :maxScore)
-              and (:hasCategory = false or exists (
-                  select 1 from TourCategory c
-                  where (c.code = a.cat1 or c.code = a.cat2 or c.code = a.cat3)
-                    and (c.name like :categoryKeyword
-                      or LOWER(c.nameEn) like LOWER(:categoryKeyword)
-                      or c.nameZh like :categoryKeyword
-                      or c.nameJa like :categoryKeyword)
-              ))
-            order by s.score desc nulls last
-            """)
-    List<Object[]> findWithLocalScoresForList(
-            @Param("date") LocalDate date,
-            @Param("timeSlot") String timeSlot,
-            @Param("minScore") BigDecimal minScore,
-            @Param("maxScore") BigDecimal maxScore,
-            @Param("hasCategory") boolean hasCategory,
-            @Param("categoryKeyword") String categoryKeyword
-    );
+        select a, s from Attraction a
+        join AttractionLocalScore s on s.id.attractionId = a.id
+        where s.id.date = :date
+          and s.id.timeSlot = :timeSlot
+          and (:minScore is null or s.score >= :minScore)
+          and (:maxScore is null or s.score <= :maxScore)
+        order by s.score desc nulls last
+        """)
+    Page<Object[]> findForPage(@Param("date") LocalDate date,
+                               @Param("timeSlot") String timeSlot,
+                               @Param("minScore") BigDecimal minScore,
+                               @Param("maxScore") BigDecimal maxScore,
+                               Pageable pageable);
 
-    // 카테고리 필터(다국어 및 대소문자 무시 지원)와 페이지네이션이 적용
+    // [탐색 화면 · 페이지] 카테고리 있음
     @Query("""
-            select a, s from Attraction a
-            join AttractionLocalScore s on s.id.attractionId = a.id
-            where s.id.date = :date
-              and s.id.timeSlot = :timeSlot
-              and (:minScore is null or s.score >= :minScore)
-              and (:maxScore is null or s.score <= :maxScore)
-              and (:hasCategory = false or exists (
-                  select 1 from TourCategory c
-                  where (c.code = a.cat1 or c.code = a.cat2 or c.code = a.cat3)
-                    and (c.name like :categoryKeyword
-                      or LOWER(c.nameEn) like LOWER(:categoryKeyword)
-                      or c.nameZh like :categoryKeyword
-                      or c.nameJa like :categoryKeyword)
-              ))
-            order by s.score desc nulls last
-            """)
-    Page<Object[]> findWithLocalScoresPage(
-            @Param("date") LocalDate date,
-            @Param("timeSlot") String timeSlot,
-            @Param("minScore") BigDecimal minScore,
-            @Param("maxScore") BigDecimal maxScore,
-            @Param("hasCategory") boolean hasCategory,
-            @Param("categoryKeyword") String categoryKeyword,
-            Pageable pageable
-    );
+        select a, s from Attraction a
+        join AttractionLocalScore s on s.id.attractionId = a.id
+        where s.id.date = :date
+          and s.id.timeSlot = :timeSlot
+          and (:minScore is null or s.score >= :minScore)
+          and (:maxScore is null or s.score <= :maxScore)
+          and (a.cat1 in :codes or a.cat2 in :codes or a.cat3 in :codes)
+        order by s.score desc nulls last
+        """)
+    Page<Object[]> findForPageByCategoryCodes(@Param("date") LocalDate date,
+                                              @Param("timeSlot") String timeSlot,
+                                              @Param("minScore") BigDecimal minScore,
+                                              @Param("maxScore") BigDecimal maxScore,
+                                              @Param("codes") Collection<String> codes,
+                                              Pageable pageable);
+
+    // [지도 화면 · 전체] 카테고리 없음
+    @Query("""
+        select a, s from Attraction a
+        join AttractionLocalScore s on s.id.attractionId = a.id
+        where s.id.date = :date
+          and s.id.timeSlot = :timeSlot
+          and (:minScore is null or s.score >= :minScore)
+          and (:maxScore is null or s.score <= :maxScore)
+        order by s.score desc nulls last
+        """)
+    List<Object[]> findForMap(@Param("date") LocalDate date,
+                              @Param("timeSlot") String timeSlot,
+                              @Param("minScore") BigDecimal minScore,
+                              @Param("maxScore") BigDecimal maxScore);
+
+    // [지도 화면 · 전체] 카테고리 있음
+    @Query("""
+        select a, s from Attraction a
+        join AttractionLocalScore s on s.id.attractionId = a.id
+        where s.id.date = :date
+          and s.id.timeSlot = :timeSlot
+          and (:minScore is null or s.score >= :minScore)
+          and (:maxScore is null or s.score <= :maxScore)
+          and (a.cat1 in :codes or a.cat2 in :codes or a.cat3 in :codes)
+        order by s.score desc nulls last
+        """)
+    List<Object[]> findForMapByCategoryCodes(@Param("date") LocalDate date,
+                                             @Param("timeSlot") String timeSlot,
+                                             @Param("minScore") BigDecimal minScore,
+                                             @Param("maxScore") BigDecimal maxScore,
+                                             @Param("codes") Collection<String> codes);
+
 
     /**
      * 기준점에서 가장 가까운 관광지(제외 ID 제외). PostGIS geography 거리(m) 기준.
