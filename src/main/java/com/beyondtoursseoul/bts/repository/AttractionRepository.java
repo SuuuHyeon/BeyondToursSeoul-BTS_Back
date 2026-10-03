@@ -24,7 +24,7 @@ public interface AttractionRepository extends JpaRepository<Attraction, Long> {
           and s.id.timeSlot = :timeSlot
           and (:minScore is null or s.score >= :minScore)
           and (:maxScore is null or s.score <= :maxScore)
-        order by s.score desc nulls last
+        order by s.score desc nulls last, a.id
         """)
     Page<Object[]> findForPage(@Param("date") LocalDate date,
                                @Param("timeSlot") String timeSlot,
@@ -41,7 +41,7 @@ public interface AttractionRepository extends JpaRepository<Attraction, Long> {
           and (:minScore is null or s.score >= :minScore)
           and (:maxScore is null or s.score <= :maxScore)
           and (a.cat1 in :codes or a.cat2 in :codes or a.cat3 in :codes)
-        order by s.score desc nulls last
+        order by s.score desc nulls last, a.id
         """)
     Page<Object[]> findForPageByCategoryCodes(@Param("date") LocalDate date,
                                               @Param("timeSlot") String timeSlot,
@@ -58,7 +58,7 @@ public interface AttractionRepository extends JpaRepository<Attraction, Long> {
           and s.id.timeSlot = :timeSlot
           and (:minScore is null or s.score >= :minScore)
           and (:maxScore is null or s.score <= :maxScore)
-        order by s.score desc nulls last
+        order by s.score desc nulls last, a.id
         """)
     List<Object[]> findForMap(@Param("date") LocalDate date,
                               @Param("timeSlot") String timeSlot,
@@ -74,7 +74,7 @@ public interface AttractionRepository extends JpaRepository<Attraction, Long> {
           and (:minScore is null or s.score >= :minScore)
           and (:maxScore is null or s.score <= :maxScore)
           and (a.cat1 in :codes or a.cat2 in :codes or a.cat3 in :codes)
-        order by s.score desc nulls last
+        order by s.score desc nulls last, a.id
         """)
     List<Object[]> findForMapByCategoryCodes(@Param("date") LocalDate date,
                                              @Param("timeSlot") String timeSlot,
