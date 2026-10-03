@@ -49,6 +49,8 @@ dependencies {
 	// 카페인캐시
 	implementation 'com.github.ben-manes.caffeine:caffeine'
 
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
 }
 
 tasks.named('test') {

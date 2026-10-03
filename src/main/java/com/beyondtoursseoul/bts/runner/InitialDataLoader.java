@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 
 @Slf4j
 @Component
+@Profile("!perf")
 @RequiredArgsConstructor
 @Order(2)
 public class InitialDataLoader implements ApplicationRunner {

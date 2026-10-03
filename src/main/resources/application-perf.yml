@@ -1,0 +1,18 @@
+spring:
+  jpa:
+    show-sql: false
+  cache:
+    cache-names: attractions,attractionsPage,attractionDetail,tourCategories,events,eventsPage,lockers
+    caffeine:
+      spec: expireAfterWrite=2h,recordStats
+
+logging:
+  level:
+    org.hibernate.SQL: warn
+    org.hibernate.type.descriptor.sql: warn
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,caches
